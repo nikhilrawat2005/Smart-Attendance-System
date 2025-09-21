@@ -1,5 +1,6 @@
 flask==2.3.3
 face-recognition==1.3.0
+dlib==19.22.1  # precompiled wheel, no compile needed
 opencv-python==4.8.1.78
 Pillow==10.0.1
 numpy==1.24.3
