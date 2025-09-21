@@ -70,6 +70,11 @@ A modern, AI-powered attendance management system that uses facial recognition t
    - Open your browser and navigate to `http://localhost:5000`
    - The system will be ready for use!
 
+### Important Note / Data Info
+
+> ⚠️ Note: The `faces/` folder contains only test face images for demonstration purposes. All attendance data will be created dynamically on your system when you run the app.
+
+
 ### Docker Deployment (Optional)
 
 1. **Build the Docker image**
