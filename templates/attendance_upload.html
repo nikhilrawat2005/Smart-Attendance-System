@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-camera"></i> Take Attendance</h4>
+            </div>
+            <div class="card-body">
+
+                {# Step 1: Select Class #}
+                {% if not class_name %}
+                <form action="{{ url_for('attendance') }}" method="post">
+                    <div class="mb-3">
+                        <label for="class_name" class="form-label">Select Class</label>
+                        <select class="form-select" id="class_name" name="class_name" required>
+                            <option value="">Select a class</option>
+                            {% for class in classes %}
+                            <option value="{{ class }}">{{ class }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Next</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+                {% endif %}
+
+                {# Step 2: Upload Photo (only after class is selected) #}
+                {% if class_name %}
+                <form action="{{ url_for('take_attendance', class_name=class_name) }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="group_photo" class="form-label">Upload Group Photo</label>
+                        <input type="file" class="form-control" id="group_photo" name="group_photo" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Process Attendance</button>
+                    <a href="{{ url_for('attendance') }}" class="btn btn-secondary">Back</a>
+                </form>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+            </div>
+            <div class="card-body">
+                <p>1. Select a class</p>
+                <p>2. Upload a group photo</p>
+                <p>3. The system will detect and recognize faces</p>
+                <p>4. Review results and save attendance</p>
+            </div>
+        </div>
+
+        {% if class_name %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Attendance History</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('attendance_history', class_name=class_name) }}" class="btn btn-outline-success w-100">
+                    View Attendance History
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

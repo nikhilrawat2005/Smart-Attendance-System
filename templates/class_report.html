@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bar-chart-line"></i> Class Report: {{ class_name }}</h2>
+    <div>
+        <a href="{{ url_for('class_detail', class_name=class_name) }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Class
+        </a>
+        <a href="{{ url_for('add_data') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-house"></i> All Classes
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white text-center p-3">
+            <h4>{{ total_classes }}</h4>
+            <p class="mb-0">Total Classes</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white text-center p-3">
+            <h4>{{ students|length }}</h4>
+            <p class="mb-0">Total Students</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white text-center p-3">
+            <h4>{{ (attendance_rate * 100)|round(1) }}%</h4>
+            <p class="mb-0">Overall Attendance</p>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Attendance Report</h5>
+        <span class="badge bg-light text-primary">Class: {{ class_name }}</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Present Days</th>
+                        <th>Absent Days</th>
+                        <th>Attendance Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.id }}</td>
+                        <td>{{ student.name }}</td>
+                        <td class="text-success fw-bold">{{ student.present_days }}</td>
+                        <td class="position-relative">
+                            <button type="button" class="btn btn-link p-0 text-decoration-none absent-days-btn" 
+                                    data-student-id="{{ student.id }}" data-student-name="{{ student.name }}">
+                                <span class="text-danger fw-bold">{{ student.absent_days }}</span>
+                            </button>
+                            <div id="absent-details-{{ student.id }}" class="absent-details-popup">
+                                {% if student.absent_dates %}
+                                <h6>Absent Dates for {{ student.name }}:</h6>
+                                <ul class="list-unstyled mb-0">
+                                    {% for date in student.absent_dates %}
+                                    <li>{{ date }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="mb-0 text-success">No absences recorded</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% set rate = (student.present_days / total_classes * 100) if total_classes > 0 else 0 %}
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar {% if rate >= 80 %}bg-success{% elif rate >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     role="progressbar" style="width: {{ rate }}%;" 
+                                     aria-valuenow="{{ rate }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ rate|round(1) }}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle absent days button clicks
+    const absentButtons = document.querySelectorAll('.absent-days-btn');
+    
+    absentButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const studentId = this.getAttribute('data-student-id');
+            const popup = document.getElementById('absent-details-' + studentId);
+            
+            // Hide all other popups first
+            document.querySelectorAll('.absent-details-popup').forEach(p => {
+                if (p !== popup) {
+                    p.classList.remove('active');
+                }
+            });
+            
+            // Toggle current popup
+            popup.classList.toggle('active');
+        });
+    });
+    
+    // Close popups when clicking elsewhere
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.absent-days-btn') && !e.target.closest('.absent-details-popup')) {
+            document.querySelectorAll('.absent-details-popup').forEach(popup => {
+                popup.classList.remove('active');
+            });
+        }
+    });
+});
+</script>
+
+<style>
+.absent-days-btn {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.absent-days-btn:hover {
+    transform: scale(1.05);
+}
+
+.absent-details-popup {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.absent-details-popup.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+.absent-details-popup h6 {
+    color: #dc3545;
+    font-weight: bold;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.absent-details-popup ul li {
+    padding: 3px 0;
+    font-size: 0.9rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

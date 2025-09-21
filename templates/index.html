@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="hero-section py-5">
+            <h1 class="display-4 mb-4">Smart Attendance System</h1>
+            <p class="lead mb-5">Automate your classroom attendance with facial recognition technology</p>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-body p-5">
+                            <i class="bi bi-people-fill display-1 text-primary mb-3"></i>
+                            <h3>Add Class Data</h3>
+                            <p>Create classes and add student information with photos</p>
+                            <a href="{{ url_for('add_data') }}" class="btn btn-primary btn-lg mt-3">Add Data</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-body p-5">
+                            <i class="bi bi-camera-fill display-1 text-success mb-3"></i>
+                            <h3>Take Attendance</h3>
+                            <p>Upload a class photo to automatically mark attendance</p>
+                            <a href="{{ url_for('attendance') }}" class="btn btn-success btn-lg mt-3">Take Attendance</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

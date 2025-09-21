@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Create New Class -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Class</h4>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('create_class_route') }}" method="post">
+                    <div class="mb-3">
+                        <label for="class_name" class="form-label">Class Name</label>
+                        <input type="text" class="form-control" id="class_name" name="class_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="total_students" class="form-label">Total Students (Optional)</label>
+                        <input type="number" class="form-control" id="total_students" name="total_students" min="1">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Class</button>
+                    <a href="{{ url_for('add_data') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Existing Classes -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-list-ul"></i> Existing Classes</h4>
+            </div>
+            <div class="card-body">
+                {% if classes %}
+                    <div class="list-group">
+                        {% for class in classes %}
+                        <div class="d-flex justify-content-between align-items-center list-group-item">
+                            <!-- Class name link -->
+                            <a href="{{ url_for('class_detail', class_name=class) }}" class="text-decoration-none flex-grow-1">
+                                {{ class }}
+                            </a>
+                            <!-- Delete button -->
+                            <form method="post" 
+                                  action="{{ url_for('delete_class_route', class_name=class) }}" 
+                                  onsubmit="return confirm('Are you sure you want to delete class {{ class }}? This will remove all photos and encodings permanently!');">
+                                <button type="submit" class="btn btn-sm btn-danger ms-2">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No classes created yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+            </div>
+            <div class="card-body">
+                <p>1. Enter a descriptive class name (e.g., "Grade 10 - Section A").</p>
+                <p>2. Optionally specify the total number of students.</p>
+                <p>3. After creation, you'll be able to add student details and photos.</p>
+                <p>4. Use the red <i class="bi bi-trash text-danger"></i> button to delete a class.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
