@@ -299,7 +299,16 @@ def generate_class_encodings(class_name):
     return True, f"Encodings generated for class '{class_name}'"
 
 # Attendance Management
-def recognize_faces_in_image(class_name, image_path, tolerance=0.48, margin=0.05):
+def recognize_faces_in_image(class_name, image_path, tolerance=0.5, margin=0.02):
+    """
+    Recognize faces in a group image and mark attendance.
+
+    Args:
+        class_name (str): Class identifier
+        image_path (str): Path to uploaded group image
+        tolerance (float): Distance threshold for recognition (lower = stricter)
+        margin (float): Difference required between best and second-best match
+    """
     class_data = get_class(class_name)
     if not class_data:
         return {"error": "Class not found"}
@@ -336,19 +345,19 @@ def recognize_faces_in_image(class_name, image_path, tolerance=0.48, margin=0.05
                 results.append((sid, data["name"], min_d))
 
         if results:
-            results.sort(key=lambda x: x[2])  # sort by distance
+            results.sort(key=lambda x: x[2])  # sort by distance (lower is better)
             best_sid, best_name, best_dist = results[0]
             second_dist = results[1][2] if len(results) > 1 else 1.0
 
-            # margin + tolerance check
-            if best_dist < tolerance and (second_dist - best_dist) >= margin:
+            # ✅ margin + tolerance check
+            if best_dist <= tolerance and (second_dist - best_dist) >= margin:
                 confidence = max(0, (1 - best_dist / 0.6) * 100)
                 recognized_faces.append({
                     "location": face_locations[i],
                     "student_id": best_sid,
                     "name": best_name,
-                    "distance": best_dist,
-                    "confidence": confidence
+                    "distance": round(best_dist, 3),
+                    "confidence": round(confidence, 1)
                 })
             else:
                 unknown_faces.append({"location": face_locations[i]})
@@ -359,11 +368,11 @@ def recognize_faces_in_image(class_name, image_path, tolerance=0.48, margin=0.05
     pil_image = Image.fromarray(group_image)
     draw = ImageDraw.Draw(pil_image)
 
-    # recognized green
+    # recognized (green box + name)
     for face in recognized_faces:
         top, right, bottom, left = face['location']
         draw.rectangle(((left, top), (right, bottom)), outline=(0, 255, 0), width=3)
-        label = f"{face['name']} ({face['confidence']:.1f}%)"
+        label = f"{face['name']} ({face['confidence']}%)"
         try:
             font = ImageFont.truetype("arial.ttf", 20)
         except IOError:
@@ -376,12 +385,12 @@ def recognize_faces_in_image(class_name, image_path, tolerance=0.48, margin=0.05
         draw.rectangle(((left, bottom - th - 10), (left + tw + 10, bottom)), fill=(0, 255, 0))
         draw.text((left + 5, bottom - th - 5), label, fill=(0, 0, 0), font=font)
 
-    # unknown red
+    # unknown (red box)
     for face in unknown_faces:
         top, right, bottom, left = face['location']
         draw.rectangle(((left, top), (right, bottom)), outline=(255, 0, 0), width=3)
 
-    # save annotated
+    # save annotated image
     annotated_dir = os.path.join("static", "annotated")
     os.makedirs(annotated_dir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -857,9 +866,10 @@ def class_report(class_name):
     return render_template(
         "class_report.html",
         class_name=class_name,
-        students_summary=students_summary,
+        students=list(students_summary.values()),  # <-- convert dict to list and name it 'students'
         total_classes=total_classes
     )
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

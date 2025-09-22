@@ -13,6 +13,10 @@
     </div>
 </div>
 
+{% set total_present = students|map(attribute='present_days')|sum %}
+{% set student_count = students|length %}
+{% set attendance_rate = (total_present / (total_classes * student_count)) if total_classes > 0 and student_count > 0 else 0 %}
+
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card bg-primary text-white text-center p-3">
@@ -22,7 +26,7 @@
     </div>
     <div class="col-md-4">
         <div class="card bg-success text-white text-center p-3">
-            <h4>{{ students|length }}</h4>
+            <h4>{{ student_count }}</h4>
             <p class="mb-0">Total Students</p>
         </div>
     </div>
