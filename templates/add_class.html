@@ -1,74 +1,101 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <!-- Create New Class -->
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Class</h4>
-            </div>
-            <div class="card-body">
-                <form action="{{ url_for('create_class_route') }}" method="post">
-                    <div class="mb-3">
-                        <label for="class_name" class="form-label">Class Name</label>
-                        <input type="text" class="form-control" id="class_name" name="class_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="total_students" class="form-label">Total Students (Optional)</label>
-                        <input type="number" class="form-control" id="total_students" name="total_students" min="1">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Create Class</button>
-                    <a href="{{ url_for('add_data') }}" class="btn btn-secondary">Cancel</a>
-                </form>
-            </div>
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8" data-aos="fade-up">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Class Management</h1>
+            <p class="text-white/60">Create and manage your classes</p>
         </div>
-        
-        <!-- Existing Classes -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0"><i class="bi bi-list-ul"></i> Existing Classes</h4>
-            </div>
-            <div class="card-body">
-                {% if classes %}
-                    <div class="list-group">
-                        {% for class in classes %}
-                        <div class="d-flex justify-content-between align-items-center list-group-item">
-                            <!-- Class name link -->
-                            <a href="{{ url_for('class_detail', class_name=class) }}" class="text-decoration-none flex-grow-1">
-                                {{ class }}
-                            </a>
-                            <!-- Delete button -->
-                            <form method="post" 
-                                  action="{{ url_for('delete_class_route', class_name=class) }}" 
-                                  onsubmit="return confirm('Are you sure you want to delete class {{ class }}? This will remove all photos and encodings permanently!');">
-                                <button type="submit" class="btn btn-sm btn-danger ms-2">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-muted">No classes created yet.</p>
-                {% endif %}
-            </div>
+        <div class="flex space-x-4">
+            <button onclick="showCreateForm()" class="bg-white text-indigo-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center space-x-2">
+                <i data-lucide="plus"></i>
+                <span>New Class</span>
+            </button>
         </div>
     </div>
-    
-    <!-- Instructions -->
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+
+    <!-- Create Class Form -->
+    <div id="createForm" class="glass-effect rounded-2xl p-6 mb-8 hidden" data-aos="fade-up">
+        <form action="{{ url_for('create_class_route') }}" method="post" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="text-white font-semibold mb-2 block">Class Name</label>
+                    <input type="text" name="class_name" class="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-indigo-300" placeholder="e.g., Grade 10 - Section A" required>
+                </div>
+                <div>
+                    <label class="text-white font-semibold mb-2 block">Total Students</label>
+                    <input type="number" name="total_students" class="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-indigo-300" placeholder="Optional">
+                </div>
             </div>
-            <div class="card-body">
-                <p>1. Enter a descriptive class name (e.g., "Grade 10 - Section A").</p>
-                <p>2. Optionally specify the total number of students.</p>
-                <p>3. After creation, you'll be able to add student details and photos.</p>
-                <p>4. Use the red <i class="bi bi-trash text-danger"></i> button to delete a class.</p>
+            <div class="flex space-x-4">
+                <button type="submit" class="bg-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-600 transition-all">Create Class</button>
+                <button type="button" onclick="hideCreateForm()" class="bg-white/10 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Classes Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for class in classes %}
+        <div class="glass-effect rounded-2xl p-6 text-white hover:scale-105 transition-transform duration-300" data-aos="fade-up">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6 text-indigo-300"></i>
+                </div>
+                <div class="flex space-x-2">
+                    <a href="{{ url_for('class_detail', class_name=class) }}" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </a>
+                    <form method="post" action="{{ url_for('delete_class_route', class_name=class) }}" onsubmit="return confirm('Delete this class?')">
+                        <button type="submit" class="p-2 bg-red-500/20 rounded-lg hover:bg-red-500/30 transition-all">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-red-300"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <h3 class="text-xl font-bold mb-2">{{ class }}</h3>
+            <p class="text-white/60 text-sm mb-4">Active • 25 students</p>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-white/60">Last activity: Today</span>
+                <!-- Updated Manage Button -->
+                <a href="{{ url_for('class_detail', class_name=class) }}" class="flex items-center space-x-1 px-4 py-2 bg-white rounded-full hover:shadow-md transition-all">
+                    <span class="text-green-600 font-semibold">Manage</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-green-600"></i>
+                </a>
             </div>
         </div>
+        {% else %}
+        <div class="col-span-3 text-center py-12" data-aos="fade-up">
+            <i data-lucide="users" class="w-16 h-16 text-white/30 mx-auto mb-4"></i>
+            <h3 class="text-xl text-white/60 mb-2">No classes yet</h3>
+            <p class="text-white/40 mb-4">Create your first class to get started</p>
+            <button onclick="showCreateForm()" class="bg-white text-indigo-600 px-6 py-3 rounded-full font-semibold">Create Class</button>
+        </div>
+        {% endfor %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showCreateForm() {
+        document.getElementById('createForm').classList.remove('hidden');
+        document.getElementById('createForm').classList.add('animate-pulse');
+    }
+    
+    function hideCreateForm() {
+        document.getElementById('createForm').classList.add('hidden');
+    }
+    
+    // Auto-show form if no classes
+    {% if not classes %}
+    document.addEventListener('DOMContentLoaded', function() {
+        showCreateForm();
+    });
+    {% endif %}
+</script>
 {% endblock %}

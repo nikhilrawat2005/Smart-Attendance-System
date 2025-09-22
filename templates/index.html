@@ -1,36 +1,104 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 text-center">
-        <div class="hero-section py-5">
-            <h1 class="display-4 mb-4">Smart Attendance System</h1>
-            <p class="lead mb-5">Automate your classroom attendance with facial recognition technology</p>
-            
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-body p-5">
-                            <i class="bi bi-people-fill display-1 text-primary mb-3"></i>
-                            <h3>Add Class Data</h3>
-                            <p>Create classes and add student information with photos</p>
-                            <a href="{{ url_for('add_data') }}" class="btn btn-primary btn-lg mt-3">Add Data</a>
-                        </div>
-                    </div>
+<div class="max-w-7xl mx-auto">
+    <!-- Welcome Header -->
+    <div class="text-center mb-12" data-aos="fade-up">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">Smart Attendance System</h1>
+        <p class="text-xl text-white/80">Revolutionizing classroom management with AI-powered face recognition</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="100">
+            <div class="flex items-center justify-between mb-4">
+                <i data-lucide="users" class="w-8 h-8 text-indigo-300"></i>
+                <span class="text-3xl font-bold">5</span>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Active Classes</h3>
+            <p class="text-white/60">Manage your classroom data</p>
+        </div>
+
+        <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="200">
+            <div class="flex items-center justify-between mb-4">
+                <i data-lucide="user-check" class="w-8 h-8 text-green-300"></i>
+                <span class="text-3xl font-bold">89%</span>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Overall Attendance</h3>
+            <p class="text-white/60">This month's average</p>
+        </div>
+
+        <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="300">
+            <div class="flex items-center justify-between mb-4">
+                <i data-lucide="trending-up" class="w-8 h-8 text-blue-300"></i>
+                <span class="text-3xl font-bold">+12%</span>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Performance</h3>
+            <p class="text-white/60">Improved from last month</p>
+        </div>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Manage Classes -->
+        <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300" data-aos="zoom-in">
+            <div class="text-center">
+                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 overflow-hidden">
+                    <img src="{{ url_for('static', filename='images/student1.jpg') }}" 
+                         alt="Manage Classes" class="w-full h-full object-cover">
                 </div>
-                
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-body p-5">
-                            <i class="bi bi-camera-fill display-1 text-success mb-3"></i>
-                            <h3>Take Attendance</h3>
-                            <p>Upload a class photo to automatically mark attendance</p>
-                            <a href="{{ url_for('attendance') }}" class="btn btn-success btn-lg mt-3">Take Attendance</a>
-                        </div>
-                    </div>
+                <h3 class="text-2xl font-bold mb-4">Manage Classes</h3>
+                <p class="text-white/60 mb-6">Create classes, add students, and manage photos for face recognition</p>
+                <a href="{{ url_for('add_data') }}" class="inline-flex items-center space-x-2 bg-white text-indigo-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all">
+                    <i data-lucide="plus"></i>
+                    <span>Get Started</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Take Attendance -->
+        <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300" data-aos="zoom-in" data-aos-delay="200">
+            <div class="text-center">
+                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 overflow-hidden">
+                    <img src="{{ url_for('static', filename='images/classroom.jpg') }}" 
+                         alt="Take Attendance" class="w-full h-full object-cover">
                 </div>
+                <h3 class="text-2xl font-bold mb-4">Take Attendance</h3>
+                <p class="text-white/60 mb-6">Upload a group photo and let AI automatically mark attendance</p>
+                <a href="{{ url_for('attendance') }}" class="inline-flex items-center space-x-2 bg-white text-green-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all">
+                    <i data-lucide="camera"></i>
+                    <span>Start Camera</span>
+                </a>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Animate numbers counting up
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+    
+    // Start animations when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const stats = document.querySelectorAll('.text-3xl');
+        stats.forEach(stat => {
+            const finalValue = parseInt(stat.textContent);
+            stat.textContent = '0';
+            animateValue(stat, 0, finalValue, 2000);
+        });
+    });
+</script>
 {% endblock %}

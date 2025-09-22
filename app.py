@@ -205,9 +205,9 @@ def add_student_photo(class_name, student_id, photo_files):
     if added > 0:
         class_data['updated_at'] = datetime.now().isoformat()
         save_class(class_data)
-        return True, f"{added} photo(s) added successfully"
+        return True, f"✅ {added} photo(s) added successfully"
     else:
-        return False, "No valid face detected in uploaded photo(s)"
+        return False, "❌ No valid face detected in uploaded photo(s)"
 
 # Function to delete a student
 def delete_student(class_name, student_id):
@@ -245,7 +245,7 @@ def delete_student(class_name, student_id):
     class_data['updated_at'] = datetime.now().isoformat()
     save_class(class_data)
 
-    return True, f"Student {student_id} deleted from {class_name}"
+    return True, f"🗑️ Student {student_id} deleted from {class_name}"
 
 # Function to generate encodings for all photos in a class
 def generate_class_encodings(class_name):
@@ -296,7 +296,7 @@ def generate_class_encodings(class_name):
     class_data['updated_at'] = datetime.now().isoformat()
     save_class(class_data)
     
-    return True, f"Encodings generated for class '{class_name}'"
+    return True, f"🔧 Encodings generated for class '{class_name}'"
 
 # Attendance Management
 def recognize_faces_in_image(class_name, image_path, tolerance=0.5, margin=0.02):
@@ -412,22 +412,26 @@ def recognize_faces_in_image(class_name, image_path, tolerance=0.5, margin=0.02)
             "status": status
         })
 
+    # Calculate recognition rate
+    recognition_rate = (len(recognized_faces) / len(class_data['students'])) * 100 if class_data['students'] else 0
+
     return {
         "class_name": class_name,
         "total_students": len(class_data["students"]),
         "recognized_count": len(recognized_faces),
         "unknown_count": len(unknown_faces),
         "student_status": student_status,
-        "annotated_image": f"annotated/{annotated_filename}"
+        "annotated_image": f"annotated/{annotated_filename}",
+        "recognition_rate": recognition_rate
     }
 
 @app.route('/class/<class_name>/delete', methods=['POST'])
 def delete_class_route(class_name):
     success, message = delete_class(class_name)
     if success:
-        flash(message, "success")
+        flash(f"🗑️ {message}", "success")
     else:
-        flash(message, "error")
+        flash(f"❌ {message}", "error")
     return redirect(url_for("add_data"))
 
 def save_attendance(class_name, attendance_data, timestamp, present_count):
@@ -476,7 +480,7 @@ def save_attendance(class_name, attendance_data, timestamp, present_count):
         writer = csv.writer(f)
         writer.writerows(csv_data)
     
-    return True, f"Attendance saved successfully for {class_name}"
+    return True, f"✅ Attendance saved successfully for {class_name}"
 
 def get_attendance_history(class_name):
     class_data = get_class(class_name)
@@ -515,6 +519,45 @@ def get_attendance_history(class_name):
     attendance_files.sort(key=lambda x: (x['date'], x['time']), reverse=True)
     return attendance_files
 
+# NEW API ROUTES
+@app.route('/api/attendance-stats/<class_name>')
+def attendance_stats(class_name):
+    """API endpoint for chart data"""
+    attendance_files = get_attendance_history(class_name)
+    
+    # Sample data - replace with actual calculation
+    data = {
+        'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'datasets': [{
+            'label': 'Attendance Rate',
+            'data': [85, 82, 88, 92],
+            'borderColor': '#10b981',
+            'backgroundColor': 'rgba(16, 185, 129, 0.1)'
+        }]
+    }
+    
+    return jsonify(data)
+
+@app.route('/api/class-overview')
+def class_overview():
+    """API endpoint for dashboard overview"""
+    classes = get_all_classes()
+    
+    # Calculate actual statistics
+    total_students = 0
+    for class_name in classes:
+        class_data = get_class(class_name)
+        if class_data:
+            total_students += len(class_data.get('students', []))
+    
+    overview = {
+        'total_classes': len(classes),
+        'total_students': total_students,
+        'attendance_rate': 89  # Calculate actual rate
+    }
+    
+    return jsonify(overview)
+
 # Flask Routes
 @app.route('/')
 def index():
@@ -531,22 +574,23 @@ def create_class_route():
     total_students = request.form.get('total_students', 0, type=int)
     
     if not class_name:
-        flash('Class name is required', 'error')
+        flash('🎯 Class name is required to get started', 'warning')
         return redirect(url_for('add_data'))
     
     success, message = create_class(class_name, total_students)
+    
     if success:
-        flash(message, 'success')
+        flash(f'🎉 {message}', 'success')
         return redirect(url_for('class_detail', class_name=class_name))
     else:
-        flash(message, 'error')
+        flash(f'⚠️ {message}', 'error')
         return redirect(url_for('add_data'))
 
 @app.route('/class/<class_name>')
 def class_detail(class_name):
     class_data = get_class(class_name)
     if not class_data:
-        flash('Class not found', 'error')
+        flash('❌ Class not found', 'error')
         return redirect(url_for('add_data'))
     
     # Calculate how many empty rows to show (at least 5)
@@ -615,7 +659,7 @@ def add_students_route(class_name):
         if sid or sname:
             if not sid or not sname:
                 # Partial row: warn user and skip this row
-                flash(f"Row {i+1}: both Student ID and Name are required. Skipping this row.", 'warning')
+                flash(f"⚠️ Row {i+1}: both Student ID and Name are required. Skipping this row.", 'warning')
                 continue
             cleaned_students.append({'student_id': sid, 'name': sname})
 
@@ -623,7 +667,7 @@ def add_students_route(class_name):
     if cleaned_students:
         success, message = add_students(class_name, cleaned_students)
     else:
-        success, message = True, "No valid student rows to add."
+        success, message = True, "ℹ️ No valid student rows to add."
 
     # After students exist in JSON, process photos for each index that had a file
     for idx, files in photo_files.items():
@@ -631,20 +675,20 @@ def add_students_route(class_name):
             student_entry = students_data[idx]
             student_id = student_entry.get('student_id')
             if not student_id:
-                flash(f"Photo provided for row {idx+1} but Student ID missing. Photo skipped.", 'warning')
+                flash(f"⚠️ Photo provided for row {idx+1} but Student ID missing. Photo skipped.", 'warning')
                 continue
             # Process and add the photos (this will compute encodings and update class json)
             success_photo, msg_photo = add_student_photo(class_name, student_id, files)
             if not success_photo:
-                flash(f"Error processing photo for {student_id}: {msg_photo}", 'warning')
+                flash(f"⚠️ Error processing photo for {student_id}: {msg_photo}", 'warning')
         else:
-            flash(f"Photo provided for unknown row {idx+1}. Skipping.", 'warning')
+            flash(f"⚠️ Photo provided for unknown row {idx+1}. Skipping.", 'warning')
 
     # Final flash and redirect
     if success:
-        flash(message, 'success')
+        flash(f'✅ {message}', 'success')
     else:
-        flash(message, 'error')
+        flash(f'❌ {message}', 'error')
 
     return redirect(url_for('class_detail', class_name=class_name))
 
@@ -654,9 +698,9 @@ def add_students_route(class_name):
 def generate_encodings_route(class_name):
     success, message = generate_class_encodings(class_name)
     if success:
-        flash(message, 'success')
+        flash(f'✅ {message}', 'success')
     else:
-        flash(message, 'error')
+        flash(f'❌ {message}', 'error')
     
     return redirect(url_for('class_detail', class_name=class_name))
 
@@ -665,14 +709,14 @@ def generate_encodings_route(class_name):
 def delete_student_route(class_name, student_id):
     success, message = delete_student(class_name, student_id)
     if success:
-        flash(message, 'success')
+        flash(f'✅ {message}', 'success')
         # optional: regenerate encodings for class
         try:
             generate_class_encodings(class_name)
         except Exception as e:
             logger.warning(f"Re-encoding failed: {e}")
     else:
-        flash(message, 'error')
+        flash(f'❌ {message}', 'error')
 
     return redirect(url_for('class_detail', class_name=class_name))
 
@@ -681,7 +725,7 @@ def attendance():
     if request.method == 'POST':
         class_name = request.form.get('class_name')
         if not class_name:
-            flash("Please select a class", "error")
+            flash("🎯 Please select a class", "error")
             return redirect(url_for("attendance"))
 
         return redirect(url_for("take_attendance", class_name=class_name))
@@ -694,20 +738,37 @@ def take_attendance(class_name):
     if request.method == 'POST':
         file = request.files.get('group_photo')
         if not file or not allowed_file(file.filename):
-            flash('Please upload a valid image file', 'error')
+            flash('📸 Please upload a valid image file', 'error')
             return redirect(url_for('attendance'))
 
-        # Save uploaded group photo
-        filename = secure_filename(file.filename)
-        filepath = os.path.join('uploads', filename)
+        # Generate unique filename
+        import uuid
+        from datetime import datetime
+
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        unique_name = f"group_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         file.save(filepath)
 
         # Recognize faces in the image
         result = recognize_faces_in_image(class_name, filepath)
         
         if 'error' in result:
-            flash(f'Error: {result["error"]}', 'error')
+            flash(f'❌ Error: {result["error"]}', 'error')
             return redirect(url_for('attendance'))
+
+        # Add success metrics
+        recognition_rate = result.get('recognition_rate', 0)
+        
+        if recognition_rate > 80:
+            flash_message = f"🎯 Excellent! {recognition_rate:.1f}% recognition rate"
+        elif recognition_rate > 60:
+            flash_message = f"👍 Good detection! {recognition_rate:.1f}% recognized"
+        else:
+            flash_message = f"🔍 Low recognition. Please check photo quality"
+        
+        flash(flash_message, 'info')
 
         # Render result page
         return render_template(
@@ -740,10 +801,10 @@ def save_attendance_route(class_name):
     success, message = save_attendance(class_name, attendance_data, timestamp, present_count)
     
     if success:
-        flash(message, 'success')
+        flash(f'✅ {message}', 'success')
         return redirect(url_for('attendance_history', class_name=class_name))
     else:
-        flash(message, 'error')
+        flash(f'❌ {message}', 'error')
         return redirect(url_for('take_attendance', class_name=class_name))
 
 @app.route('/attendance/<class_name>/history')
@@ -760,7 +821,7 @@ def download_attendance(class_name, filename):
     if os.path.exists(filepath):
         return send_file(filepath, as_attachment=True)
     else:
-        flash('File not found', 'error')
+        flash('❌ File not found', 'error')
         return redirect(url_for('attendance_history', class_name=class_name))
 
 # New route to view attendance table
@@ -793,7 +854,7 @@ def class_report(class_name):
     # Get class data
     class_data = get_class(class_name)
     if not class_data:
-        flash("Class not found", "error")
+        flash("❌ Class not found", "error")
         return redirect(url_for("add_data"))
     
     # Get attendance files for this class
@@ -801,7 +862,7 @@ def class_report(class_name):
     attendance_dir = os.path.join(ATTENDANCE_DATA_FOLDER, safe_class_name)
     
     if not os.path.exists(attendance_dir):
-        flash("No attendance records found for this class.", "warning")
+        flash("ℹ️ No attendance records found for this class.", "warning")
         return redirect(url_for("class_detail", class_name=class_name))
     
     # Initialize student summary

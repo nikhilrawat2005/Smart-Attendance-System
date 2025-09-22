@@ -1,72 +1,125 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="bi bi-camera"></i> Take Attendance</h4>
-            </div>
-            <div class="card-body">
-
-                {# Step 1: Select Class #}
-                {% if not class_name %}
-                <form action="{{ url_for('attendance') }}" method="post">
-                    <div class="mb-3">
-                        <label for="class_name" class="form-label">Select Class</label>
-                        <select class="form-select" id="class_name" name="class_name" required>
-                            <option value="">Select a class</option>
-                            {% for class in classes %}
-                            <option value="{{ class }}">{{ class }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Next</button>
-                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-                </form>
-                {% endif %}
-
-                {# Step 2: Upload Photo (only after class is selected) #}
-                {% if class_name %}
-                <form action="{{ url_for('take_attendance', class_name=class_name) }}" method="post" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="group_photo" class="form-label">Upload Group Photo</label>
-                        <input type="file" class="form-control" id="group_photo" name="group_photo" accept="image/*" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Process Attendance</button>
-                    <a href="{{ url_for('attendance') }}" class="btn btn-secondary">Back</a>
-                </form>
-                {% endif %}
-
-            </div>
-        </div>
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12" data-aos="fade-up">
+        <h1 class="text-4xl font-bold text-white mb-4">Take Attendance</h1>
+        <p class="text-xl text-white/60">Upload a group photo or use live camera for automatic attendance</p>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
-            </div>
-            <div class="card-body">
-                <p>1. Select a class</p>
-                <p>2. Upload a group photo</p>
-                <p>3. The system will detect and recognize faces</p>
-                <p>4. Review results and save attendance</p>
-            </div>
+
+    <!-- Class Selection -->
+    {% if not class_name %}
+    <div class="glass-effect rounded-2xl p-8 text-center" data-aos="zoom-in">
+        <i data-lucide="users" class="w-16 h-16 text-indigo-300 mx-auto mb-6"></i>
+        <h2 class="text-2xl font-bold text-white mb-4">Select a Class</h2>
+        
+        <form action="{{ url_for('attendance') }}" method="post" class="max-w-md mx-auto">
+            <select name="class_name" class="w-full p-4 rounded-lg bg-white/10 border border-white/20 text-black mb-6 focus:outline-none focus:border-indigo-300">
+                <option value="">Choose a class...</option>
+                {% for class in classes %}
+                <option value="{{ class }}">{{ class }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="bg-indigo-500 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-600 transition-all w-full">
+                Continue to Attendance
+            </button>
+        </form>
+    </div>
+    {% else %}
+    <!-- Attendance Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Upload Section -->
+        <div class="glass-effect rounded-2xl p-6" data-aos="fade-right">
+            <h2 class="text-2xl font-bold text-white mb-4">Upload Group Photo</h2>
+            
+            <form action="{{ url_for('take_attendance', class_name=class_name) }}" method="post" enctype="multipart/form-data" class="space-y-6">
+                <div class="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:border-indigo-300 transition-colors">
+                    <i data-lucide="upload-cloud" class="w-12 h-12 text-white/40 mx-auto mb-4"></i>
+                    <p class="text-white/60 mb-4">Drag & drop your class photo here</p>
+                    <input type="file" name="group_photo" accept="image/*" class="hidden" id="fileInput" required>
+                    <button type="button" onclick="document.getElementById('fileInput').click()" 
+                            class="bg-white/10 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all">
+                        Choose File
+                    </button>
+                    
+                    <!-- Preview Container -->
+                    <div id="previewContainer" class="mt-4"></div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button type="submit" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-all flex-1">
+                        Process Attendance
+                    </button>
+                    <a href="{{ url_for('attendance') }}" class="bg-white/10 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all flex items-center justify-center">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                        Back
+                    </a>
+                </div>
+            </form>
         </div>
 
-        {% if class_name %}
-        <div class="card shadow mt-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Attendance History</h5>
+        <!-- Live Camera Section -->
+        <div class="glass-effect rounded-2xl p-6" data-aos="fade-left">
+            <h2 class="text-2xl font-bold text-white mb-4">Live Camera</h2>
+            
+            <div class="aspect-video bg-black/20 rounded-2xl flex items-center justify-center mb-4">
+                <i data-lucide="video-off" class="w-16 h-16 text-white/30"></i>
             </div>
-            <div class="card-body">
-                <a href="{{ url_for('attendance_history', class_name=class_name) }}" class="btn btn-outline-success w-100">
-                    View Attendance History
+            
+            <p class="text-white/60 text-center mb-6">Live camera feature coming soon</p>
+            
+            <div class="flex space-x-4">
+                <button class="bg-white/10 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all flex-1" disabled>
+                    Start Camera
+                </button>
+                <a href="{{ url_for('attendance_history', class_name=class_name) }}" 
+                   class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-all flex items-center justify-center">
+                    <i data-lucide="history" class="w-4 h-4 mr-2"></i>
+                    History
                 </a>
             </div>
         </div>
-        {% endif %}
     </div>
+
+    <!-- Class Info -->
+    <div class="glass-effect rounded-2xl p-6 mt-8" data-aos="fade-up">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-white">{{ class_name }}</h3>
+                <p class="text-white/60">25 students • Last attendance: Today</p>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-green-400">92%</div>
+                <p class="text-white/60 text-sm">This month's attendance</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // File upload preview without removing input
+    const fileInput = document.getElementById('fileInput');
+    const previewContainer = document.getElementById('previewContainer');
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Remove previous preview if any
+                previewContainer.innerHTML = '';
+                // Create new preview
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'w-full h-48 object-cover rounded-lg';
+                previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
 {% endblock %}

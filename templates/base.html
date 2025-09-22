@@ -4,57 +4,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Attendance System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Animation Libraries -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/lucide.css" rel="stylesheet">
+    
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --teacher-primary: #6366f1;
+            --teacher-secondary: #8b5cf6;
+            --student-primary: #10b981;
+            --student-secondary: #06b6d4;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .floating { 
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0% { transform: translate(0, 0px); }
+            50% { transform: translate(0, -10px); }
+            100% { transform: translate(0, 0px); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); }
+        }
+    </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="bi bi-person-check-fill"></i> Smart Attendance
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('add_data') }}">Add Data</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('attendance') }}">Take Attendance</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
+<body class="min-h-screen gradient-bg font-sans">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 opacity-10">
+        <div class="absolute top-10 left-10 w-20 h-20 bg-white rounded-full floating"></div>
+        <div class="absolute top-1/2 right-1/4 w-16 h-16 bg-white rounded-full floating" style="animation-delay: 1s;"></div>
+        <div class="absolute bottom-20 left-1/3 w-12 h-12 bg-white rounded-full floating" style="animation-delay: 2s;"></div>
     </div>
 
-    <footer class="bg-light text-center text-muted py-3 mt-5">
-        <div class="container">
-            <p>Smart Attendance System &copy; 2025</p>
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 glass-effect z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+        <div class="p-6">
+            <div class="flex items-center space-x-3 mb-8">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                     alt="Logo" 
+                     class="w-10 h-10 rounded-full object-cover">
+                <h1 class="text-white text-xl font-bold">Smart Attendance</h1>
+            </div>
+            
+            <nav class="space-y-2">
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-3 p-3 text-white rounded-lg hover:bg-white/20 transition-all">
+                    <i data-lucide="home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('add_data') }}" class="flex items-center space-x-3 p-3 text-white rounded-lg hover:bg-white/20 transition-all">
+                    <img src="{{ url_for('static', filename='images/student1.jpg') }}" 
+                         alt="Manage Classes" 
+                         class="w-6 h-6 rounded-full object-cover">
+                    <span>Manage Classes</span>
+                </a>
+                <a href="{{ url_for('attendance') }}" class="flex items-center space-x-3 p-3 text-white rounded-lg hover:bg-white/20 transition-all">
+                    <img src="{{ url_for('static', filename='images/classroom.jpg') }}" 
+                         alt="Take Attendance" 
+                         class="w-6 h-6 rounded-full object-cover">
+                    <span>Take Attendance</span>
+                </a>
+            </nav>
         </div>
-    </footer>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <!-- Main Content -->
+    <div class="lg:ml-64 min-h-screen">
+        <!-- Top Bar -->
+        <header class="glass-effect sticky top-0 z-40">
+            <div class="flex items-center justify-between p-4">
+                <button class="lg:hidden text-white" onclick="toggleSidebar()">
+                    <i data-lucide="menu"></i>
+                </button>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="themeToggle" class="p-2 rounded-full glass-effect text-white">
+                        <i data-lucide="sun" class="hidden"></i>
+                        <i data-lucide="moon" class="hidden"></i>
+                    </button>
+                    <div class="flex items-center space-x-2 text-white">
+                        <img src="{{ url_for('static', filename='images/teacher.jpg') }}" 
+                             alt="Teacher" 
+                             class="w-8 h-8 rounded-full object-cover">
+                        <span>Teacher</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <main class="p-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-2 mb-6">
+                        {% for category, message in messages %}
+                            <div class="p-4 rounded-lg glass-effect text-white animate-pulse" data-aos="fade-down">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        // Initialize animations
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+        
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            document.querySelector('.fixed.left-0').classList.toggle('-translate-x-full');
+        }
+        
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark');
+            // Add dark mode logic here
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
 </body>
 </html>

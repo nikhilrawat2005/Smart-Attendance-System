@@ -1,100 +1,126 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-check-circle"></i> Attendance Results - {{ class_name }}</h2>
-    <a href="{{ url_for('attendance') }}" class="btn btn-outline-secondary">Back to Upload</a>
-</div>
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8" data-aos="fade-up">
+        <h1 class="text-3xl font-bold text-white mb-2">Attendance Results</h1>
+        <p class="text-xl text-white/60">{{ class_name }} • {{ result.student_status|length }} students processed</p>
+    </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card shadow mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Attendance Summary</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ result.total_students }}</h5>
-                                <p class="card-text">Total Students</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-success text-white">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ result.recognized_count }}</h5>
-                                <p class="card-text">Present</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-danger text-white">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ result.unknown_count }}</h5>
-                                <p class="card-text">Unknown Faces</p>
-                            </div>
-                        </div>
-                    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Results Summary -->
+        <div data-aos="fade-right">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="glass-effect rounded-2xl p-4 text-center">
+                    <div class="text-2xl font-bold text-white">{{ result.total_students }}</div>
+                    <p class="text-white/60 text-sm">Total</p>
+                </div>
+                <div class="glass-effect rounded-2xl p-4 text-center bg-green-500/20">
+                    <div class="text-2xl font-bold text-green-400">{{ result.recognized_count }}</div>
+                    <p class="text-green-300 text-sm">Present</p>
+                </div>
+                <div class="glass-effect rounded-2xl p-4 text-center bg-red-500/20">
+                    <div class="text-2xl font-bold text-red-400">{{ result.unknown_count }}</div>
+                    <p class="text-red-300 text-sm">Unknown</p>
                 </div>
             </div>
-        </div>
-        
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Mark Attendance</h5>
-            </div>
-            <div class="card-body">
+
+            <!-- Attendance Form -->
+            <div class="glass-effect rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4">Mark Attendance</h2>
+                
                 <form action="{{ url_for('save_attendance_route', class_name=class_name) }}" method="post">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Student ID</th>
-                                    <th>Name</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for student in result.student_status %}
-                                <tr>
-                                    <td>{{ student.student_id }}</td>
-                                    <td>{{ student.name }}</td>
-                                    <td>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   name="status_{{ student.student_id }}" 
-                                                   value="present" 
-                                                   {% if student.status == 'present' %}checked{% endif %}>
-                                            <label class="form-check-label">
-                                                {% if student.status == 'present' %}Present{% else %}Absent{% endif %}
-                                            </label>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        {% for student in result.student_status %}
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div>
+                                <div class="font-semibold text-white">{{ student.name }}</div>
+                                <div class="text-white/60 text-sm">{{ student.student_id }}</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="status_{{ student.student_id }}" value="present" 
+                                       class="sr-only peer" {% if student.status == 'present' %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                                <span class="ml-3 text-sm font-medium text-white">
+                                    {% if student.status == 'present' %}Present{% else %}Absent{% endif %}
+                                </span>
+                            </label>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <button type="submit" class="btn btn-primary">Save Attendance</button>
+                    
+                    <button type="submit" class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition-all mt-6 flex items-center justify-center space-x-2">
+                        <i data-lucide="save"></i>
+                        <span>Save Attendance</span>
+                    </button>
                 </form>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Annotated Photo</h5>
-            </div>
-            <div class="card-body text-center">
-                <img src="{{ url_for('static', filename=result.annotated_image) }}" 
-                     class="img-fluid" alt="Annotated Group Photo">
-                <p class="mt-2 text-muted">Green boxes: Recognized students | Red boxes: Unknown faces</p>
+
+        <!-- Annotated Image -->
+        <div data-aos="fade-left">
+            <div class="glass-effect rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4">Detection Results</h2>
+                
+                <div class="relative">
+                    <img src="{{ url_for('static', filename=result.annotated_image) }}" 
+                         alt="Annotated Photo" class="w-full rounded-lg shadow-lg">
+                    
+                    <!-- Legend -->
+                    <div class="flex space-x-4 mt-4 justify-center">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-green-500 rounded"></div>
+                            <span class="text-white text-sm">Recognized</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-red-500 rounded"></div>
+                            <span class="text-white text-sm">Unknown</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <a href="{{ url_for('attendance') }}" class="bg-white/10 text-white py-3 rounded-lg text-center hover:bg-white/20 transition-all">
+                        Take Another
+                    </a>
+                    <a href="{{ url_for('attendance_history', class_name=class_name) }}" class="bg-blue-500 text-white py-3 rounded-lg text-center hover:bg-blue-600 transition-all">
+                        View History
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Celebrate if high recognition rate
+    document.addEventListener('DOMContentLoaded', function() {
+        const recognized = {{ result.recognized_count }};
+        const total = {{ result.total_students }};
+        const rate = (recognized / total) * 100;
+        
+        if (rate > 80) {
+            // Small confetti celebration
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    });
+    
+    // Toggle switch animations
+    const switches = document.querySelectorAll('input[type="checkbox"]');
+    switches.forEach(switchEl => {
+        switchEl.addEventListener('change', function() {
+            const label = this.parentElement.querySelector('span');
+            label.textContent = this.checked ? 'Present' : 'Absent';
+        });
+    });
+</script>
 {% endblock %}

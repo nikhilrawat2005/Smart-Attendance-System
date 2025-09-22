@@ -1,107 +1,245 @@
-// JavaScript for Smart Attendance System
+// Smart Attendance System - Enhanced JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Enable Bootstrap tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+    // Initialize all components
+    initAnimations();
+    initThemeSystem();
+    initInteractiveElements();
+    initNotifications();
+});
+
+// Animation System
+function initAnimations() {
+    // Initialize AOS
+    AOS.init({
+        duration: 800,
+        once: true,
+        offset: 100
     });
+
+    // Floating elements
+    const floatingElements = document.querySelectorAll('.floating');
+    floatingElements.forEach((el, index) => {
+        el.style.animationDelay = `${index * 0.5}s`;
+    });
+
+    // Pulse animations
+    const pulseElements = document.querySelectorAll('.pulse-glow');
+    pulseElements.forEach((el, index) => {
+        el.style.animationDelay = `${index * 0.3}s`;
+    });
+}
+
+// Theme System
+function initThemeSystem() {
+    const themeToggle = document.getElementById('themeToggle');
+    const sunIcon = themeToggle.querySelector('[data-lucide="sun"]');
+    const moonIcon = themeToggle.querySelector('[data-lucide="moon"]');
     
-    // Image preview for file inputs
-    const photoInputs = document.querySelectorAll('input[type="file"]');
-    photoInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Create preview image
-                    const preview = document.createElement('img');
-                    preview.src = e.target.result;
-                    preview.className = 'preview-img mt-2';
-                    preview.style.maxWidth = '100px';
-                    
-                    // Remove existing preview
-                    const existingPreview = input.parentNode.querySelector('.preview-img');
-                    if (existingPreview) {
-                        existingPreview.remove();
-                    }
-                    
-                    // Add new preview
-                    input.parentNode.appendChild(preview);
-                }
-                reader.readAsDataURL(file);
+    // Check saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+
+    themeToggle.addEventListener('click', function() {
+        const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+    });
+
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.add('dark');
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+        } else {
+            document.body.classList.remove('dark');
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        }
+        localStorage.setItem('theme', theme);
+    }
+}
+
+// Interactive Elements
+function initInteractiveElements() {
+    // File upload enhancements
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function(e) {
+            const files = e.target.files;
+            const container = this.closest('.file-upload-container') || this.parentElement;
+            
+            // Create preview if image
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                createImagePreview(files[0], container);
             }
+            
+            // Add file count badge
+            addFileCountBadge(files.length, container);
         });
     });
+
+    // Progress bars animation
+    animateProgressBars();
     
-    // Form validation
+    // Count-up animations for stats
+    animateStatistics();
+}
+
+// Image Preview System
+function createImagePreview(file, container) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Remove existing preview
+        const existingPreview = container.querySelector('.image-preview');
+        if (existingPreview) existingPreview.remove();
+
+        // Create new preview
+        const preview = document.createElement('div');
+        preview.className = 'image-preview relative mt-4';
+        preview.innerHTML = `
+            <img src="${e.target.result}" class="w-full h-48 object-cover rounded-lg shadow-lg">
+            <button type="button" class="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full" onclick="this.parentElement.remove()">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        `;
+        container.appendChild(preview);
+        lucide.createIcons();
+    };
+    reader.readAsDataURL(file);
+}
+
+// File Count Badge
+function addFileCountBadge(count, container) {
+    let badge = container.querySelector('.file-count-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'file-count-badge absolute -top-2 -right-2 bg-indigo-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center';
+        container.style.position = 'relative';
+        container.appendChild(badge);
+    }
+    badge.textContent = count;
+    badge.classList.toggle('hidden', count === 0);
+}
+
+// Progress Bars Animation
+function animateProgressBars() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+            bar.style.transition = 'width 2s ease-in-out';
+        }, 500);
+    });
+}
+
+// Statistics Animation
+function animateStatistics() {
+    const stats = document.querySelectorAll('.stat-number');
+    stats.forEach(stat => {
+        const finalValue = parseInt(stat.textContent);
+        let current = 0;
+        const increment = finalValue / 50;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= finalValue) {
+                stat.textContent = finalValue;
+                clearInterval(timer);
+            } else {
+                stat.textContent = Math.floor(current);
+            }
+        }, 30);
+    });
+}
+
+// Notification System
+function initNotifications() {
+    // Auto-hide flash messages
+    const flashMessages = document.querySelectorAll('.alert');
+    flashMessages.forEach(message => {
+        setTimeout(() => {
+            message.style.opacity = '0';
+            message.style.transform = 'translateY(-20px)';
+            setTimeout(() => message.remove(), 300);
+        }, 5000);
+    });
+
+    // Success confetti
+    const successMessages = document.querySelectorAll('.alert-success');
+    successMessages.forEach(() => {
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    });
+}
+
+// Form Validation Enhancement
+function enhanceFormValidation() {
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
-            let valid = true;
-            const requiredInputs = form.querySelectorAll('[required]');
-            
-            requiredInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    valid = false;
-                    input.classList.add('is-invalid');
-                } else {
-                    input.classList.remove('is-invalid');
-                }
-            });
-            
-            if (!valid) {
-                e.preventDefault();
-                // Scroll to first invalid input
-                const firstInvalid = form.querySelector('.is-invalid');
-                if (firstInvalid) {
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        });
-    });
-    
-    // Auto-format student ID
-    const studentIdInputs = document.querySelectorAll('input[name$="_id"]');
-    studentIdInputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            if (this.value) {
-                // Convert to uppercase and remove special characters
-                this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            }
-        });
-    });
-    
-    // Attendance table row highlighting
-    const attendanceTable = document.querySelector('table');
-    if (attendanceTable) {
-        const rows = attendanceTable.querySelectorAll('tbody tr');
-        rows.forEach(row => {
-            const radio = row.querySelector('input[type="radio"]:checked');
-            if (radio && radio.value === 'present') {
-                row.classList.add('table-success');
-            } else if (radio && radio.value === 'absent') {
-                row.classList.add('table-danger');
-            }
-            
-            // Add event listener for status changes
-            const radios = row.querySelectorAll('input[type="radio"]');
-            radios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    rows.forEach(r => r.classList.remove('table-success', 'table-danger'));
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('error');
+                    isValid = false;
                     
-                    rows.forEach(r => {
-                        const selectedRadio = r.querySelector('input[type="radio"]:checked');
-                        if (selectedRadio) {
-                            if (selectedRadio.value === 'present') {
-                                r.classList.add('table-success');
-                            } else if (selectedRadio.value === 'absent') {
-                                r.classList.add('table-danger');
-                            }
-                        }
+                    // Add error animation
+                    field.animate([
+                        { transform: 'translateX(0px)' },
+                        { transform: 'translateX(-10px)' },
+                        { transform: 'translateX(10px)' },
+                        { transform: 'translateX(0px)' }
+                    ], {
+                        duration: 500
                     });
-                });
+                } else {
+                    field.classList.remove('error');
+                }
             });
+
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Show error message
+                showNotification('Please fill all required fields', 'error');
+            }
         });
-    }
-});
+    });
+}
+
+// Custom Notification
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg glass-effect text-white z-50 transform translate-x-full transition-transform ${type === 'error' ? 'bg-red-500/20' : 'bg-green-500/20'}`;
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3">
+            <i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="w-5 h-5"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    lucide.createIcons();
+    
+    // Animate in
+    setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+    
+    // Auto remove
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Export functions for global use
+window.toggleSidebar = function() {
+    document.querySelector('.fixed.left-0').classList.toggle('-translate-x-full');
+};
+
+window.showNotification = showNotification;
