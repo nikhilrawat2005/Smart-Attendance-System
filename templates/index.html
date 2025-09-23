@@ -8,37 +8,42 @@
         <p class="text-xl text-white/80">Revolutionizing classroom management with AI-powered face recognition</p>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards - NOW DYNAMIC -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <!-- Active Classes Card -->
         <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="100">
             <div class="flex items-center justify-between mb-4">
                 <i data-lucide="users" class="w-8 h-8 text-indigo-300"></i>
-                <span class="text-3xl font-bold">5</span>
+                <span class="text-3xl font-bold">{{ stats.active_classes }}</span>
             </div>
             <h3 class="text-lg font-semibold mb-2">Active Classes</h3>
-            <p class="text-white/60">Manage your classroom data</p>
+            <p class="text-white/60">{{ stats.total_students }} total students</p>
         </div>
 
+        <!-- Overall Attendance Card -->
         <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="200">
             <div class="flex items-center justify-between mb-4">
                 <i data-lucide="user-check" class="w-8 h-8 text-green-300"></i>
-                <span class="text-3xl font-bold">89%</span>
+                <span class="text-3xl font-bold">{{ stats.attendance_rate }}%</span>
             </div>
-            <h3 class="text-lg font-semibold mb-2">Overall Attendance</h3>
-            <p class="text-white/60">This month's average</p>
+            <h3 class="text-lg font-semibold mb-2">Today's Attendance</h3>
+            <p class="text-white/60">{{ stats.today_present }}/{{ stats.today_total }} students present</p>
         </div>
 
+        <!-- Performance Card -->
         <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="300">
             <div class="flex items-center justify-between mb-4">
                 <i data-lucide="trending-up" class="w-8 h-8 text-blue-300"></i>
-                <span class="text-3xl font-bold">+12%</span>
+                <span class="text-3xl font-bold">
+                    {% if stats.performance_status == 'Improved' %}+{% else %}-{% endif %}{{ stats.performance_change }}%
+                </span>
             </div>
             <h3 class="text-lg font-semibold mb-2">Performance</h3>
-            <p class="text-white/60">Improved from last month</p>
+            <p class="text-white/60">{{ stats.performance_status }} from yesterday</p>
         </div>
     </div>
 
-    <!-- Action Cards -->
+    <!-- Action Cards (REST REMAINS SAME) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Manage Classes -->
         <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300" data-aos="zoom-in">
@@ -95,9 +100,17 @@
     document.addEventListener('DOMContentLoaded', function() {
         const stats = document.querySelectorAll('.text-3xl');
         stats.forEach(stat => {
-            const finalValue = parseInt(stat.textContent);
-            stat.textContent = '0';
-            animateValue(stat, 0, finalValue, 2000);
+            const text = stat.textContent;
+            // Check if it's a percentage or regular number
+            if (text.includes('%')) {
+                const finalValue = parseFloat(text);
+                stat.textContent = '0%';
+                animateValue(stat, 0, finalValue, 2000);
+            } else {
+                const finalValue = parseInt(text);
+                stat.textContent = '0';
+                animateValue(stat, 0, finalValue, 2000);
+            }
         });
     });
 </script>

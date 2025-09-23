@@ -39,11 +39,10 @@
     <!-- Classes Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for class in classes %}
+        {% set class_data = get_class_data(class) %}
         <div class="glass-effect rounded-2xl p-6 text-white hover:scale-105 transition-transform duration-300" data-aos="fade-up">
             <div class="flex justify-between items-start mb-4">
-                <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
-                    <i data-lucide="users" class="w-6 h-6 text-indigo-300"></i>
-                </div>
+                <h3 class="text-2xl font-bold text-white">{{ class }}</h3>
                 <div class="flex space-x-2">
                     <a href="{{ url_for('class_detail', class_name=class) }}" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all">
                         <i data-lucide="eye" class="w-4 h-4"></i>
@@ -56,12 +55,17 @@
                 </div>
             </div>
             
-            <h3 class="text-xl font-bold mb-2">{{ class }}</h3>
-            <p class="text-white/60 text-sm mb-4">Active • 25 students</p>
+            <!-- DYNAMIC STUDENT COUNT -->
+            <p class="text-white/60 text-sm mb-4">
+                {% if class_data and class_data.students %}
+                    Active • {{ class_data.students|length }} students
+                {% else %}
+                    Active • 0 students
+                {% endif %}
+            </p>
             
             <div class="flex items-center justify-between">
                 <span class="text-sm text-white/60">Last activity: Today</span>
-                <!-- Updated Manage Button -->
                 <a href="{{ url_for('class_detail', class_name=class) }}" class="flex items-center space-x-1 px-4 py-2 bg-white rounded-full hover:shadow-md transition-all">
                     <span class="text-green-600 font-semibold">Manage</span>
                     <i data-lucide="arrow-right" class="w-4 h-4 text-green-600"></i>

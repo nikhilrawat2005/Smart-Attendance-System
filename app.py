@@ -4,8 +4,8 @@ import json
 import csv
 import base64
 import logging
-from datetime import datetime
-from flask import Flask, request, render_template, redirect, url_for, flash, send_file, jsonify
+from datetime import datetime, timedelta
+from flask import Flask, request, render_template, redirect, send_from_directory, url_for, flash, send_file, jsonify
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -45,6 +45,90 @@ def allowed_file(filename):
 
 def get_safe_name(name):
     return "".join(c for c in name if c.isalnum() or c in (' ', '-', '_')).rstrip().replace(' ', '_')
+
+# Attendance Summary Functions (NEW)
+def ensure_attendance_csv_exists():
+    """Make sure CSV exists with header"""
+    os.makedirs(os.path.dirname("attendance_data/overall_attendance.csv"), exist_ok=True)
+    csv_file = "attendance_data/overall_attendance.csv"
+    if not os.path.exists(csv_file):
+        with open(csv_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["date", "class_name", "total_students", "present"])
+
+def log_attendance(class_name, total_students, present):
+    """Add/Update today's record for a class"""
+    ensure_attendance_csv_exists()
+    today = datetime.now().date().isoformat()
+    csv_file = "attendance_data/overall_attendance.csv"
+    rows = []
+    updated = False
+    
+    # read old data
+    with open(csv_file, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["date"] == today and row["class_name"] == class_name:
+                row["total_students"] = str(total_students)
+                row["present"] = str(present)
+                updated = True
+            rows.append(row)
+    
+    # if not updated, add new row
+    if not updated:
+        rows.append({
+            "date": today,
+            "class_name": class_name,
+            "total_students": total_students,
+            "present": present
+        })
+    
+    # rewrite file
+    with open(csv_file, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["date","class_name","total_students","present"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+def get_today_summary():
+    """Return total present/total students"""
+    ensure_attendance_csv_exists()
+    today = datetime.now().date().isoformat()
+    csv_file = "attendance_data/overall_attendance.csv"
+    total_students, total_present = 0, 0
+    
+    with open(csv_file, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["date"] == today:
+                total_students += int(row["total_students"])
+                if row["present"] != "":
+                    total_present += int(row["present"])
+    
+    return total_present, total_students
+
+def get_performance():
+    """Compare today's vs yesterday's attendance %"""
+    ensure_attendance_csv_exists()
+    today = datetime.now().date().isoformat()
+    yesterday = (datetime.now().date() - timedelta(days=1)).isoformat()
+    csv_file = "attendance_data/overall_attendance.csv"
+    
+    def calc_percentage(day):
+        total_s, total_p = 0, 0
+        with open(csv_file, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["date"] == day and row["present"] != "":
+                    total_s += int(row["total_students"])
+                    total_p += int(row["present"])
+        return (total_p/total_s*100) if total_s > 0 else 0
+    
+    today_perc = calc_percentage(today)
+    yest_perc = calc_percentage(yesterday)
+    
+    change = today_perc - yest_perc
+    status = "Improved" if change > 0 else "Declined"
+    return today_perc, status, round(abs(change), 1)
 
 # Class Management
 def get_all_classes():
@@ -203,9 +287,23 @@ def add_student_photo(class_name, student_id, photo_files):
             logger.warning(f"Error processing {filepath}: {e}")
 
     if added > 0:
+        # Keep only the first photo for encodings
+        if student['photos']:
+            # Sort photos by filename and keep only the first one for encoding
+            sorted_photos = sorted(student['photos'])
+            first_photo = sorted_photos[0]
+            
+            # Find the encoding corresponding to the first photo
+            first_photo_index = student['photos'].index(first_photo)
+            first_encoding = student['encodings'][first_photo_index]
+            
+            # Keep only the first photo and encoding
+            student['photos'] = [first_photo]
+            student['encodings'] = [first_encoding]
+        
         class_data['updated_at'] = datetime.now().isoformat()
         save_class(class_data)
-        return True, f"✅ {added} photo(s) added successfully"
+        return True, f"✅ {added} photo(s) added successfully. Only first photo used for encoding."
     else:
         return False, "❌ No valid face detected in uploaded photo(s)"
 
@@ -264,9 +362,12 @@ def generate_class_encodings(class_name):
         # Clear existing encodings
         student['encodings'] = []
         
-        # Process each photo
-        for photo in student['photos']:
-            photo_path = os.path.join(class_faces_dir, photo)
+        # Use only the first photo (sorted by filename)
+        if student['photos']:
+            # Sort photos by filename and take the first one
+            sorted_photos = sorted(student['photos'])
+            first_photo = sorted_photos[0]
+            photo_path = os.path.join(class_faces_dir, first_photo)
             
             if not os.path.exists(photo_path):
                 continue
@@ -285,8 +386,8 @@ def generate_class_encodings(class_name):
                 face_encodings = face_recognition.face_encodings(image, face_locations)
                 
                 if face_encodings:
-                    # Add encoding to student data
-                    student['encodings'].append(face_encodings[0].tolist())
+                    # Add only the first encoding to student data
+                    student['encodings'] = [face_encodings[0].tolist()]
                     
             except Exception as e:
                 print(f"Error processing {photo_path}: {e}")
@@ -296,7 +397,7 @@ def generate_class_encodings(class_name):
     class_data['updated_at'] = datetime.now().isoformat()
     save_class(class_data)
     
-    return True, f"🔧 Encodings generated for class '{class_name}'"
+    return True, f"🔧 Encodings generated for class '{class_name}' (using first photo only)"
 
 # Attendance Management
 def recognize_faces_in_image(class_name, image_path, tolerance=0.5, margin=0.02):
@@ -558,10 +659,48 @@ def class_overview():
     
     return jsonify(overview)
 
-# Flask Routes
+# Flask Routes - UPDATED INDEX ROUTE
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # NEW: Calculate dynamic stats
+    classes = get_all_classes()
+    active_classes = len(classes)
+    
+    # Calculate total students across all classes
+    total_students_all = 0
+    for class_name in classes:
+        class_data = get_class(class_name)
+        if class_data:
+            total_students_all += len(class_data.get('students', []))
+    
+    # Get today's attendance summary
+    try:
+        today_present, today_total = get_today_summary()
+        # Calculate attendance rate
+        attendance_rate = round((today_present / today_total * 100), 1) if today_total > 0 else 0
+    except:
+        today_present, today_total = 0, 0
+        attendance_rate = 0
+    
+    # Get performance data
+    try:
+        today_perc, performance_status, performance_change = get_performance()
+    except:
+        performance_status = "Improved"
+        performance_change = 0
+    
+    # Prepare stats for template
+    stats = {
+        'active_classes': active_classes,
+        'total_students': total_students_all,
+        'today_present': today_present,
+        'today_total': today_total,
+        'attendance_rate': attendance_rate,
+        'performance_status': performance_status,
+        'performance_change': performance_change
+    }
+    
+    return render_template('index.html', stats=stats)
 
 @app.route('/add_data')
 def add_data():
@@ -603,92 +742,127 @@ def class_detail(class_name):
 
 @app.route('/class/<class_name>/add_students', methods=['POST'])
 def add_students_route(class_name):
-    # We'll build a list `students_data` where index = row index from the form (0,1,2,...)
+    # -------------------------------
+    # 1️⃣ Collect text inputs (FIXED)
+    # -------------------------------
     students_data = []
-
-    # First pass: read all text fields from request.form (student_X_id and student_X_name)
+    
+    # Collect all form fields systematically
     for key in request.form:
-        # Expecting keys like 'student_0_id' or 'student_1_name'
         if not key.startswith('student_'):
             continue
+            
         parts = key.split('_')
-        # Safety: require at least student, idx, field
         if len(parts) < 3:
             continue
-        _, idx_str, field = parts[0], parts[1], parts[2]
+            
         try:
-            idx = int(idx_str)
-        except ValueError:
+            idx = int(parts[1])
+            field = parts[2]
+        except (ValueError, IndexError):
             continue
 
         # Ensure list is large enough
         while len(students_data) <= idx:
-            students_data.append({})
+            students_data.append({'student_id': '', 'name': ''})
 
         if field == 'id':
-            students_data[idx]['student_id'] = request.form.get(key).strip()
+            students_data[idx]['student_id'] = request.form.get(key, '').strip()
         elif field == 'name':
-            students_data[idx]['name'] = request.form.get(key).strip()
+            students_data[idx]['name'] = request.form.get(key, '').strip()
 
-    # Second pass: collect uploaded photo files
+    logger.info(f"Collected student info: {students_data}")
+
+    # -------------------------------
+    # 2️⃣ Collect uploaded files (FIXED)
+    # -------------------------------
     photo_files = {}
     for file_key in request.files:
-        # Expecting file_key like 'student_0_photos'
         if not file_key.startswith('student_') or not file_key.endswith('_photos'):
             continue
+            
         parts = file_key.split('_')
         if len(parts) < 3:
             continue
+            
         try:
             idx = int(parts[1])
         except ValueError:
             continue
 
-        # Support multiple file uploads
         files = request.files.getlist(file_key)
         valid_files = [f for f in files if f and f.filename and allowed_file(f.filename)]
         if valid_files:
             photo_files[idx] = valid_files
+            logger.info(f"Files received for row {idx}: {[f.filename for f in valid_files]}")
 
-    # Validate and prepare students list to send to add_students()
-    # Remove empty rows (where both id and name missing)
+    # -------------------------------
+    # 3️⃣ Clean student data (FIXED)
+    # -------------------------------
     cleaned_students = []
     for i, s in enumerate(students_data):
-        sid = s.get('student_id', '').strip() if s.get('student_id') else ''
-        sname = s.get('name', '').strip() if s.get('name') else ''
-        if sid or sname:
-            if not sid or not sname:
-                # Partial row: warn user and skip this row
-                flash(f"⚠️ Row {i+1}: both Student ID and Name are required. Skipping this row.", 'warning')
-                continue
+        sid = s.get('student_id', '').strip()
+        sname = s.get('name', '').strip()
+        
+        # Only add if both fields are filled
+        if sid and sname:
             cleaned_students.append({'student_id': sid, 'name': sname})
+        elif sid or sname:  # Only one field filled
+            flash(f"⚠️ Row {i+1}: Both Student ID and Name are required. Skipping.", 'warning')
 
-    # Now call add_students to update JSON (it will create missing student entries)
+    # -------------------------------
+    # 4️⃣ Add students to JSON (FIXED)
+    # -------------------------------
     if cleaned_students:
         success, message = add_students(class_name, cleaned_students)
+        logger.info(f"add_students result: {success}, {message}")
+        
+        if not success:
+            flash(f'❌ {message}', 'error')
+            return redirect(url_for('class_detail', class_name=class_name))
     else:
-        success, message = True, "ℹ️ No valid student rows to add."
+        flash("ℹ️ No valid student data to add.", 'info')
+        return redirect(url_for('class_detail', class_name=class_name))
 
-    # After students exist in JSON, process photos for each index that had a file
+    # -------------------------------
+    # 5️⃣ Process photos for each student (FIXED)
+    # -------------------------------
+    photos_processed = 0
     for idx, files in photo_files.items():
         if idx < len(students_data):
             student_entry = students_data[idx]
-            student_id = student_entry.get('student_id')
+            student_id = student_entry.get('student_id', '').strip()
+            
             if not student_id:
                 flash(f"⚠️ Photo provided for row {idx+1} but Student ID missing. Photo skipped.", 'warning')
                 continue
-            # Process and add the photos (this will compute encodings and update class json)
-            success_photo, msg_photo = add_student_photo(class_name, student_id, files)
-            if not success_photo:
-                flash(f"⚠️ Error processing photo for {student_id}: {msg_photo}", 'warning')
-        else:
-            flash(f"⚠️ Photo provided for unknown row {idx+1}. Skipping.", 'warning')
 
-    # Final flash and redirect
-    if success:
-        flash(f'✅ {message}', 'success')
+            # Check if student exists in class
+            class_data = get_class(class_name)
+            student_exists = any(s['student_id'] == student_id for s in class_data.get('students', []))
+            
+            if not student_exists:
+                flash(f"⚠️ Student {student_id} not found in class. Please add student first.", 'warning')
+                continue
+
+            # Process and add photos
+            success_photo, msg_photo = add_student_photo(class_name, student_id, files)
+            logger.info(f"add_student_photo for {student_id}: {success_photo}, {msg_photo}")
+
+            if success_photo:
+                photos_processed += 1
+            else:
+                flash(f"⚠️ {msg_photo} for {student_id}", 'warning')
+        else:
+            flash(f"⚠️ Photo provided for invalid row {idx+1}. Skipping.", 'warning')
+
+    # -------------------------------
+    # 6️⃣ Final flash and redirect
+    # -------------------------------
+    if photos_processed > 0:
+        flash(f'✅ Students added successfully and {photos_processed} photo(s) processed!', 'success')
     else:
-        flash(f'❌ {message}', 'error')
+        flash(f'✅ Students added successfully!', 'success')
 
     return redirect(url_for('class_detail', class_name=class_name))
 
@@ -780,6 +954,7 @@ def take_attendance(class_name):
     # GET request - show upload page
     return render_template("attendance_upload.html", class_name=class_name)
 
+# UPDATED SAVE ATTENDANCE ROUTE WITH STATS LOGGING
 @app.route('/attendance/<class_name>/save', methods=['POST'])
 def save_attendance_route(class_name):
     attendance_data = []
@@ -795,6 +970,12 @@ def save_attendance_route(class_name):
             })
             if status == 'present':
                 present_count += 1
+    
+    # NEW: Log attendance for stats
+    class_data = get_class(class_name)
+    if class_data:
+        total_students = len(class_data.get('students', []))
+        log_attendance(class_name, total_students, present_count)
     
     # Save attendance to CSV
     timestamp = datetime.now()
@@ -931,6 +1112,13 @@ def class_report(class_name):
         total_classes=total_classes
     )
 
+@app.route('/known_faces/<path:filename>')
+def known_faces(filename):
+    # Base folder where all class folders are stored
+    base_dir = os.path.join(app.root_path, 'known_faces')  # change 'known_faces' if your folder is named differently
+
+    # Safely serve the requested file
+    return send_from_directory(base_dir, filename)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
