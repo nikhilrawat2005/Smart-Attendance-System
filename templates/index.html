@@ -20,14 +20,16 @@
             <p class="text-white/60">{{ stats.total_students }} total students</p>
         </div>
 
-        <!-- Overall Attendance Card -->
+        <!-- Today's Attendance Card (Final) -->
         <div class="glass-effect rounded-2xl p-6 text-white" data-aos="fade-up" data-aos-delay="200">
             <div class="flex items-center justify-between mb-4">
                 <i data-lucide="user-check" class="w-8 h-8 text-green-300"></i>
-                <span class="text-3xl font-bold">{{ stats.attendance_rate }}%</span>
+                <span class="text-base font-medium">
+                    Today Mid-Day Attendance — {{ stats.today_present }}/{{ stats.today_total }}
+                </span>
             </div>
             <h3 class="text-lg font-semibold mb-2">Today's Attendance</h3>
-            <p class="text-white/60">{{ stats.today_present }}/{{ stats.today_total }} students present</p>
+            <p class="text-white/60">Present students</p>
         </div>
 
         <!-- Performance Card -->
@@ -35,7 +37,8 @@
             <div class="flex items-center justify-between mb-4">
                 <i data-lucide="trending-up" class="w-8 h-8 text-blue-300"></i>
                 <span class="text-3xl font-bold">
-                    {% if stats.performance_status == 'Improved' %}+{% else %}-{% endif %}{{ stats.performance_change }}%
+                    {% if stats.performance_status == 'Improved' %}+{% else %}-{% endif %}{{ stats.performance_change
+                    }}%
                 </span>
             </div>
             <h3 class="text-lg font-semibold mb-2">Performance</h3>
@@ -43,18 +46,21 @@
         </div>
     </div>
 
-    <!-- Action Cards (REST REMAINS SAME) -->
+    <!-- Action Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Manage Classes -->
-        <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300" data-aos="zoom-in">
+        <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300"
+            data-aos="zoom-in">
             <div class="text-center">
-                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 overflow-hidden">
-                    <img src="{{ url_for('static', filename='images/student1.jpg') }}" 
-                         alt="Manage Classes" class="w-full h-full object-cover">
+                <div
+                    class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 overflow-hidden">
+                    <img src="{{ url_for('static', filename='images/student1.jpg') }}" alt="Manage Classes"
+                        class="w-full h-full object-cover">
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Manage Classes</h3>
                 <p class="text-white/60 mb-6">Create classes, add students, and manage photos for face recognition</p>
-                <a href="{{ url_for('add_data') }}" class="inline-flex items-center space-x-2 bg-white text-indigo-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all">
+                <a href="{{ url_for('add_data') }}"
+                    class="inline-flex items-center space-x-2 bg-white text-indigo-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all">
                     <i data-lucide="plus"></i>
                     <span>Get Started</span>
                 </a>
@@ -62,15 +68,18 @@
         </div>
 
         <!-- Take Attendance -->
-        <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300" data-aos="zoom-in" data-aos-delay="200">
+        <div class="glass-effect rounded-2xl p-8 text-white hover:scale-105 transition-transform duration-300"
+            data-aos="zoom-in" data-aos-delay="200">
             <div class="text-center">
-                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 overflow-hidden">
-                    <img src="{{ url_for('static', filename='images/classroom.jpg') }}" 
-                         alt="Take Attendance" class="w-full h-full object-cover">
+                <div
+                    class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 overflow-hidden">
+                    <img src="{{ url_for('static', filename='images/classroom.jpg') }}" alt="Take Attendance"
+                        class="w-full h-full object-cover">
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Take Attendance</h3>
                 <p class="text-white/60 mb-6">Upload a group photo and let AI automatically mark attendance</p>
-                <a href="{{ url_for('attendance') }}" class="inline-flex items-center space-x-2 bg-white text-green-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all">
+                <a href="{{ url_for('attendance') }}"
+                    class="inline-flex items-center space-x-2 bg-white text-green-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all">
                     <i data-lucide="camera"></i>
                     <span>Start Camera</span>
                 </a>
@@ -95,18 +104,17 @@
         };
         window.requestAnimationFrame(step);
     }
-    
+
     // Start animations when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        const stats = document.querySelectorAll('.text-3xl');
+    document.addEventListener('DOMContentLoaded', function () {
+        const stats = document.querySelectorAll('.text-3xl, .text-2xl');
         stats.forEach(stat => {
             const text = stat.textContent;
-            // Check if it's a percentage or regular number
             if (text.includes('%')) {
                 const finalValue = parseFloat(text);
                 stat.textContent = '0%';
                 animateValue(stat, 0, finalValue, 2000);
-            } else {
+            } else if (!isNaN(parseInt(text))) {
                 const finalValue = parseInt(text);
                 stat.textContent = '0';
                 animateValue(stat, 0, finalValue, 2000);

@@ -133,51 +133,54 @@
 <script>
     // Attendance Chart
     const ctx = document.getElementById('attendanceChart').getContext('2d');
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-            datasets: [{
-                label: 'Attendance Rate',
-                data: [85, 82, 88, 92],
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: 'white'
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: 'white'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: 'white'
-                    }
-                }
+    let chart;
+
+    fetch('/api/attendance-stats/{{ class_name }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.datasets && data.datasets.length > 0) {
+                data.datasets[0].tension = 0.4;
+                data.datasets[0].fill = true;
+                data.datasets[0].borderColor = '#10b981';
+                data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.1)';
             }
-        }
-    });
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error fetching attendance stats:', err));
     
     // Toggle absent details
     function toggleAbsentDetails(studentId) {

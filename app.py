@@ -19,19 +19,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Change in production
+app.config.from_object(Config)
 
-# Configuration
-UPLOAD_FOLDER = 'uploads'
-DATA_FOLDER = 'data'
-KNOWN_FACES_FOLDER = 'known_faces'
-ATTENDANCE_DATA_FOLDER = 'attendance_data'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-MATCH_THRESHOLD = 0.6
-MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+# Configuration loaded from Config
+UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', 'uploads')
+DATA_FOLDER = app.config.get('DATA_FOLDER', 'data')
+KNOWN_FACES_FOLDER = app.config.get('KNOWN_FACES_FOLDER', 'known_faces')
+ATTENDANCE_DATA_FOLDER = app.config.get('ATTENDANCE_DATA_FOLDER', 'attendance_data')
+ALLOWED_EXTENSIONS = app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg'})
+MATCH_THRESHOLD = app.config.get('MATCH_THRESHOLD', 0.6)
 
 # Create necessary directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -624,14 +620,54 @@ def get_attendance_history(class_name):
 @app.route('/api/attendance-stats/<class_name>')
 def attendance_stats(class_name):
     """API endpoint for chart data"""
-    attendance_files = get_attendance_history(class_name)
+    ensure_attendance_csv_exists()
+    csv_file = "attendance_data/overall_attendance.csv"
     
-    # Sample data - replace with actual calculation
+    records = []
+    try:
+        with open(csv_file, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["class_name"] == class_name:
+                    records.append(row)
+    except Exception as e:
+        logger.warning(f"Error reading overall_attendance: {e}")
+
+    # Sort records by date ascending
+    records.sort(key=lambda x: x["date"])
+    
+    # Take the last 10 entries to keep the chart clean
+    records = records[-10:]
+    
+    labels = []
+    data_points = []
+    
+    for r in records:
+        try:
+            d = datetime.strptime(r["date"], "%Y-%m-%d")
+            label_str = d.strftime("%b %d")
+        except:
+            label_str = r["date"]
+        
+        try:
+            tot = int(r["total_students"])
+            pres = int(r["present"])
+            rate = round((pres / tot * 100), 1) if tot > 0 else 0
+        except ValueError:
+            rate = 0
+            
+        labels.append(label_str)
+        data_points.append(rate)
+        
+    if not labels:
+        labels = ["No Data"]
+        data_points = [0]
+        
     data = {
-        'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'labels': labels,
         'datasets': [{
             'label': 'Attendance Rate',
-            'data': [85, 82, 88, 92],
+            'data': data_points,
             'borderColor': '#10b981',
             'backgroundColor': 'rgba(16, 185, 129, 0.1)'
         }]
@@ -650,11 +686,26 @@ def class_overview():
         class_data = get_class(class_name)
         if class_data:
             total_students += len(class_data.get('students', []))
+            
+    ensure_attendance_csv_exists()
+    csv_file = "attendance_data/overall_attendance.csv"
+    sum_students = 0
+    sum_present = 0
+    try:
+        with open(csv_file, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                sum_students += int(row["total_students"])
+                sum_present += int(row["present"])
+    except Exception as e:
+        logger.warning(f"Error reading overall_attendance.csv: {e}")
+        
+    actual_rate = round((sum_present / sum_students * 100), 1) if sum_students > 0 else 0
     
     overview = {
         'total_classes': len(classes),
         'total_students': total_students,
-        'attendance_rate': 89  # Calculate actual rate
+        'attendance_rate': actual_rate
     }
     
     return jsonify(overview)
@@ -926,7 +977,7 @@ def take_attendance(class_name):
         file.save(filepath)
 
         # Recognize faces in the image
-        result = recognize_faces_in_image(class_name, filepath)
+        result = recognize_faces_in_image(class_name, filepath, tolerance=MATCH_THRESHOLD)
         
         if 'error' in result:
             flash(f'❌ Error: {result["error"]}', 'error')
